@@ -1,0 +1,167 @@
+<div class="container-fluid">
+
+    <div class="custom-card">
+
+        <h4 class="mb-4">
+
+            <i class="fas fa-square-plus text-primary"></i>
+
+            Input Activity
+
+        </h4>
+
+        <form id="taskForm">
+
+            <div class="row">
+
+                <!-- Tanggal -->
+
+                <div class="col-md-3 mb-3">
+
+                    <label class="form-label">
+
+                        Tanggal
+
+                    </label>
+
+                    <input
+                        type="date"
+                        class="form-control"
+                        id="tanggal"
+                        required>
+
+                </div>
+
+                <!-- Nama -->
+
+                <div class="col-md-3 mb-3">
+
+                    <label class="form-label">
+
+                        Nama
+
+                    </label>
+
+                    <select
+                        id="nama"
+                        class="form-select">
+
+                    </select>
+
+                </div>
+
+                <!-- Project -->
+
+                <div class="col-md-3 mb-3">
+
+                    <label class="form-label">
+
+                        Project
+
+                    </label>
+
+                    <select
+                        id="project"
+                        class="form-select">
+
+                    </select>
+
+                </div>
+
+                <!-- Status -->
+
+                <div class="col-md-3 mb-3">
+
+                    <label class="form-label">
+
+                        Status
+
+                    </label>
+
+                    <select
+                        id="status"
+                        class="form-select">
+
+                    </select>
+
+                </div>
+
+            </div>
+
+            <div class="row">
+
+                <!-- Task -->
+
+                <div class="col-md-6 mb-3">
+
+                    <label class="form-label">
+
+                        Task
+
+                    </label>
+
+                    <select
+                        id="task"
+                        class="form-select">
+
+                    </select>
+
+                </div>
+
+                <!-- Task Lainnya -->
+
+                <div
+                    class="col-md-6 mb-3 hidden"
+                    id="customTaskDiv">
+
+                    <label class="form-label">
+
+                        Task Lainnya
+
+                    </label>
+
+                    <input
+                        type="text"
+                        id="customTask"
+                        class="form-control">
+
+                </div>
+
+            </div>
+
+            <div class="mb-3">
+
+                <label class="form-label">
+
+                    Hasil
+
+                </label>
+
+                <textarea
+                    id="hasil"
+                    class="form-control"
+                    rows="5"
+                    placeholder="Tuliskan hasil pekerjaan..."></textarea>
+
+            </div>
+
+            <div class="text-end">
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="saveTask()">
+
+                    <i class="fas fa-floppy-disk"></i>
+
+                    Simpan
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>

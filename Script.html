@@ -1,0 +1,737 @@
+<script>
+
+//==================================================
+// GLOBAL VARIABLE
+//==================================================
+
+let APP = {};
+
+let masterData = {};
+
+let dashboardData = {};
+
+let reportData = {};
+
+let tsNama = null;
+let tsProject = null;
+let tsTask = null;
+let tsStatus = null;
+
+//==================================================
+// DOCUMENT READY
+//==================================================
+
+$(document).ready(function () {
+
+    initializeApp();
+
+});
+
+//==================================================
+// INITIALIZE
+//==================================================
+
+function initializeApp() {
+
+    showLoading();
+
+    setTodayDate();
+
+    loadDashboard();
+
+    setTimeout(function () {
+
+        hideLoading();
+
+    }, 700);
+
+}
+
+//==================================================
+// LOADING
+//==================================================
+
+function showLoading() {
+
+    $("#loading").fadeIn(200);
+
+}
+
+function hideLoading() {
+
+    $("#loading").fadeOut(300);
+
+}
+
+//==================================================
+// SIDEBAR ACTIVE
+//==================================================
+
+function setActiveMenu(menu) {
+
+    $(".sidebar-menu a").removeClass("active");
+
+    $(menu).addClass("active");
+
+}
+
+//==================================================
+// NAVBAR DATE
+//==================================================
+
+function setTodayDate() {
+
+    const today = new Date();
+
+    const option = {
+
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric"
+
+    };
+
+    $("#todayDate").text(
+
+        today.toLocaleDateString("id-ID", option)
+
+    );
+
+}
+
+//==================================================
+// CHANGE PAGE TITLE
+//==================================================
+
+function setPageTitle(title){
+
+    $("#pageTitle").text(title);
+
+}
+
+//==================================================
+// DASHBOARD
+//==================================================
+
+function loadDashboard() {
+
+    setPageTitle("Dashboard");
+
+    $("#dashboardPage").show();
+
+    $("#inputPage").hide();
+
+    $("#reportPage").hide();
+
+    google.script.run
+
+        .withSuccessHandler(function(data){
+
+            dashboardData = data;
+
+            renderDashboard(data);
+
+        })
+
+        .withFailureHandler(function(err){
+
+            Swal.fire({
+
+                icon: "error",
+
+                title: "Error",
+
+                text: err.message
+
+            });
+
+        })
+
+        .getDashboard();
+
+}
+
+//==================================================
+// RENDER DASHBOARD
+//==================================================
+
+function renderDashboard(data){
+
+    if(!data) return;
+
+    $("#todayCount").text(data.today);
+
+    $("#weekCount").text(data.week);
+
+    $("#monthCount").text(data.month);
+
+    renderRecentActivity(data.recent);
+
+}
+
+//==================================================
+// RECENT ACTIVITY
+//==================================================
+
+function renderRecentActivity(data){
+
+    let html = "";
+
+    if(!data || data.length === 0){
+
+        html = `
+
+            <tr>
+
+                <td colspan="4" class="text-center text-muted">
+
+                    Belum ada aktivitas.
+
+                </td>
+
+            </tr>
+
+        `;
+
+    }
+
+    else{
+
+        (data || []).forEach(function(item){
+
+            html += `
+
+                <tr>
+
+                    <td>${item.tanggal}</td>
+
+                    <td>${item.project}</td>
+
+                    <td>${item.task}</td>
+
+                    <td>${statusBadge(item.status)}</td>
+
+                </tr>
+
+            `;
+
+        });
+
+    }
+
+    $("#recentActivity").html(html);
+
+}
+
+//==================================================
+// STATUS BADGE
+//==================================================
+
+function statusBadge(status){
+
+    if(status === "Done"){
+
+        return `<span class="badge badge-success">Done</span>`;
+
+    }
+
+    if(status === "In Progress"){
+
+        return `<span class="badge badge-warning">In Progress</span>`;
+
+    }
+
+    return `<span class="badge badge-danger">To Do</span>`;
+
+}
+
+//==================================================
+// REFRESH DASHBOARD
+//==================================================
+
+function refreshDashboard(){
+
+    google.script.run
+
+        .withSuccessHandler(function(data){
+
+            dashboardData = data;
+
+            renderDashboard(data);
+
+        })
+
+        .getDashboard();
+
+}
+
+//==================================================
+// INPUT ACTIVITY
+//==================================================
+
+function loadInputTask(){
+
+    setPageTitle("Input Activity");
+
+    $("#dashboardPage").hide();
+
+    $("#inputPage").show();
+
+    $("#reportPage").hide();
+
+    setToday();
+
+    loadMasterData();
+
+}
+
+//==================================================
+// LOAD MASTER DATA
+//==================================================
+
+function loadMasterData(){
+
+    google.script.run
+
+        .withSuccessHandler(function(data){
+
+            masterData = data;
+
+            loadSelectOption();
+
+            initTomSelect();
+
+            toggleCustomTask($("#task").val());
+
+        })
+
+        .getConfig();
+
+}
+
+//==================================================
+// LOAD SELECT OPTION
+//==================================================
+
+function loadSelectOption(){
+
+    fillSelect("#nama",masterData.user);
+
+    fillSelect("#project",masterData.project);
+
+    fillSelect("#task",masterData.task);
+
+    fillSelect("#status",masterData.status);
+
+}
+
+//==================================================
+// FILL OPTION
+//==================================================
+
+function fillSelect(id,data){
+
+    let html="";
+
+    (data || []).forEach(function(item){
+
+    html += `<option value="${item}">${item}</option>`;
+
+});
+
+    $(id).html(html);
+
+}
+
+//==================================================
+// TOM SELECT
+//==================================================
+
+function initTomSelect(){
+
+    if(tsNama) tsNama.destroy();
+
+    if(tsProject) tsProject.destroy();
+
+    if(tsTask) tsTask.destroy();
+
+    if(tsStatus) tsStatus.destroy();
+
+    tsNama=new TomSelect("#nama");
+
+    tsProject=new TomSelect("#project");
+
+    tsTask=new TomSelect("#task",{
+
+        onChange:function(value){
+
+            toggleCustomTask(value);
+
+        }
+
+    });
+
+    tsStatus=new TomSelect("#status");
+
+}
+
+//==================================================
+// CUSTOM TASK
+//==================================================
+
+function toggleCustomTask(task){
+
+    if(task==="Lainnya"){
+
+        $("#customTaskDiv").removeClass("hidden");
+
+    }else{
+
+        $("#customTaskDiv").addClass("hidden");
+
+        $("#customTask").val("");
+
+    }
+
+}
+
+//==================================================
+// SET TODAY
+//==================================================
+
+function setToday(){
+
+    const today=new Date();
+
+    const yyyy=today.getFullYear();
+
+    const mm=String(today.getMonth()+1).padStart(2,"0");
+
+    const dd=String(today.getDate()).padStart(2,"0");
+
+    $("#tanggal").val(`${yyyy}-${mm}-${dd}`);
+
+}
+
+//==================================================
+// SAVE TASK
+//==================================================
+
+function saveTask(){
+
+    const data={
+
+        tanggal:$("#tanggal").val(),
+
+        nama:$("#nama").val(),
+
+        project:$("#project").val(),
+
+        task:$("#task").val(),
+
+        customTask:$("#customTask").val(),
+
+        status:$("#status").val(),
+
+        hasil:$("#hasil").val()
+
+    };
+
+    if(!data.tanggal ||
+   !data.nama ||
+   !data.project ||
+   !data.task ||
+   !data.status){
+
+    Swal.fire({
+
+        icon:"warning",
+
+        title:"Data belum lengkap",
+
+        text:"Mohon lengkapi semua field."
+
+    });
+
+    return;
+
+}
+
+    google.script.run
+
+        .withSuccessHandler(function(res){
+
+            Swal.fire({
+
+                icon:"success",
+
+                title:"Berhasil",
+
+                text:res.message,
+
+                timer:1500,
+
+                showConfirmButton:false
+
+            });
+
+            resetForm();
+
+            refreshDashboard();
+
+            refreshReport();
+
+        })
+
+        .withFailureHandler(function(err){
+
+            Swal.fire({
+
+                icon:"error",
+
+                title:"Gagal",
+
+                text:err.message
+
+            });
+
+        })
+
+        .saveTask(data);
+
+}
+
+//==================================================
+// RESET FORM
+//==================================================
+
+function resetForm(){
+
+    $("#hasil").val("");
+
+    $("#customTask").val("");
+
+    $("#customTaskDiv").addClass("hidden");
+
+    setToday();
+
+    loadMasterData();
+
+    $("#hasil").focus();
+
+}
+
+//==================================================
+// REPORT
+//==================================================
+
+function loadReport(){
+
+    setPageTitle("Report");
+
+    $("#dashboardPage").hide();
+
+    $("#inputPage").hide();
+
+    $("#reportPage").show();
+
+    refreshReport();
+
+}
+
+//==================================================
+// REFRESH REPORT
+//==================================================
+
+function refreshReport(){
+
+    const type = $("#reportType").val() || "today";
+
+    google.script.run
+
+        .withSuccessHandler(function(data){
+
+            reportData=data;
+
+            renderReport(data);
+
+        })
+
+        .withFailureHandler(function(err){
+
+            Swal.fire({
+
+                icon:"error",
+
+                title:"Error",
+
+                text:err.message
+
+            });
+
+        })
+
+        .getReport(type);
+
+}
+
+//==================================================
+// REPORT CHANGE
+//==================================================
+
+$(document).on("change","#reportType",function(){
+
+    refreshReport();
+
+});
+
+//==================================================
+// RENDER REPORT
+//==================================================
+
+function renderReport(data){
+
+    let html="";
+
+    const projectList = Object.keys(data || {});
+
+    if(projectList.length===0){
+
+        $("#reportContainer").html(`
+
+            <div class="text-center text-muted py-5">
+
+                Tidak ada data.
+
+            </div>
+
+        `);
+
+        return;
+
+    }
+
+    projectList.forEach(function(project){
+
+        html+=`
+
+        <div class="custom-card mb-4">
+
+            <h5 class="text-primary mb-3">
+
+                ${project}
+
+            </h5>
+
+            <table class="table table-striped table-hover reportTable">
+
+                <thead>
+
+                    <tr>
+
+                        <th width="120">Tanggal</th>
+
+                        <th>Task</th>
+
+                        <th width="140">Status</th>
+
+                        <th>Hasil</th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+        `;
+
+        data[project].forEach(function(item){
+
+            html+=`
+
+                <tr>
+
+                    <td>${item.tanggal}</td>
+
+                    <td>${item.task}</td>
+
+                    <td>${statusBadge(item.status)}</td>
+
+                    <td>${item.hasil}</td>
+
+                </tr>
+
+            `;
+
+        });
+
+        html+=`
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        `;
+
+    });
+
+    $("#reportContainer").html(html);
+
+    $(".reportTable").DataTable({
+
+        destroy:true,
+
+        pageLength:10,
+
+        responsive:true,
+
+        ordering:false,
+
+        dom:"Bfrtip",
+
+        buttons:[
+
+            "excel",
+
+            "pdf",
+
+            "print"
+
+        ]
+
+    });
+
+}
+
+//==================================================
+// AUTO REFRESH
+//==================================================
+
+setInterval(function(){
+
+    if($("#dashboardPage").is(":visible")){
+
+        refreshDashboard();
+
+    }
+
+},60000);
+
+//==================================================
+// APP READY
+//==================================================
+
+window.onload=function(){
+
+    hideLoading();
+
+};
+
+//==================================================
+// END
+//==================================================
+
+</script>
